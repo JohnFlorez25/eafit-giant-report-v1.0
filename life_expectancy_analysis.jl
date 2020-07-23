@@ -138,3 +138,105 @@ function mape(performance_df)
     return mape
 end
 
+# RMSE function defination
+function rmse(performance_df)
+    rmse = sqrt(mean(performance_df.error.*performance_df.error))
+    return rmse
+end
+
+# Error en los datos de Prueba
+println("Error absoluto medio en Test: ",mean(abs.(performance_testdf.error)), "\n")
+println("Error porcentual absoluto medio en Test: ",mape(performance_testdf), "\n")
+println("Error cuadrático medio en Test: ",rmse(performance_testdf), "\n")
+println("Error medio cuadrado en Test: ",mean(performance_testdf.error_sq), "\n")
+
+#  Error en los datos de Entrenamiento
+println("Error absoluto medio en Entrenamiento: ",mean(abs.(performance_traindf.error)), "\n")
+println("Error porcentual absoluto medio en Entrenamiento: ",mape(performance_traindf), "\n")
+println("Error cuadrático medio en Entrenamiento: ",rmse(performance_traindf), "\n")
+println("Error medio cuadrado en Entrenamiento: ",mean(performance_traindf.error_sq), "\n")
+
+# DISTRIBUCIÓN DE LOS errores
+
+# Histograma del error en los datos de prueba
+histogram(performance_testdf.error, bins = 50, title = "Análisis del eror en los datos de prueba", ylabel = "Frecuencia", xlabel = "Error",legend = false, size=(450,300))
+
+# Histograma del error en los datos de entrenamiento
+histogram(performance_traindf.error, bins = 50, title = "Training Error Analysis", ylabel = "Frequency", xlabel = "Error",legend = false, size=(450,300))
+
+# Scatter plot de los valores actuales vs los datos de prueba
+test_plot = scatter(performance_testdf[!,:y_actual],performance_testdf[!,:y_predicted], title = "Valor de Predicción vs Valor Actual en Datos de Prueba", ylabel = "Valor de Predicción", xlabel = "Valor Actual", legend = false, size=(700,300))
+
+# Scatter plot de los valores actuales vs los datos de entrenamiento
+train_plot = scatter(performance_traindf[!,:y_actual],performance_traindf[!,:y_predicted], title = "Valor de Predicción vs Valor Actual en Datos de Entrenamiento", ylabel = "Valor de Predicción", xlabel = "Valor Actual", legend = false, size=(700,300))
+
+# Definición de la función de validación cruzada
+function cross_validation(train,k, fm = @formula(Life_expectancy ~ Adult_Mortality))
+    a = collect(Kfold(size(train)[1], k))
+    for i in 1:k
+        row = a[i]
+        temp_train = train[row,:]
+        temp_test = train[setdiff(1:end, row),:]
+        linearRegressor = lm(fm, temp_train)
+        performance_testdf = DataFrame(y_actual = temp_test[!,:Life_expectancy], y_predicted = predict(linearRegressor, temp_test))
+        performance_testdf.error = performance_testdf[!,:y_actual] - performance_testdf[!,:y_predicted]
+
+        println("Error medio del conjunto $i is ",mean(abs.(performance_testdf.error)))
+    end
+end
+
+#VALIDANDO EN REGESIÓN MULTIPLE
+
+fm = @formula(Life_expectancy ~ Adult_Mortality + infant_deaths + Developing + BMI + Total_expenditure + HIV_AIDS   + Income_composition_of_resources)
+linearRegressor = lm(fm, train)
+
+# R Square value of the model
+r2(linearRegressor)
+
+#Diagnóstico del modelo
+# Prediction
+ypredicted_test = predict(linearRegressor, test)
+ypredicted_train = predict(linearRegressor, train)
+
+# Test Performance DataFrame
+performance_testdf = DataFrame(y_actual = test[!,:Life_expectancy], y_predicted = ypredicted_test)
+performance_testdf.error = performance_testdf[!,:y_actual] - performance_testdf[!,:y_predicted]
+performance_testdf.error_sq = performance_testdf.error.*performance_testdf.error
+
+# Train Performance DataFrame
+performance_traindf = DataFrame(y_actual = train[!,:Life_expectancy], y_predicted = ypredicted_train)
+performance_traindf.error = performance_traindf[!,:y_actual] - performance_traindf[!,:y_predicted]
+performance_traindf.error_sq = performance_traindf.error.*performance_traindf.error ;
+
+# Error en los datos de Prueba
+println("Error absoluto medio en Test: ",mean(abs.(performance_testdf.error)), "\n")
+println("Error porcentual absoluto medio en Test: ",mape(performance_testdf), "\n")
+println("Error cuadrático medio en Test: ",rmse(performance_testdf), "\n")
+println("Error medio cuadrado en Test: ",mean(performance_testdf.error_sq), "\n")
+
+#  Error en los datos de Entrenamiento
+println("Error absoluto medio en Entrenamiento: ",mean(abs.(performance_traindf.error)), "\n")
+println("Error porcentual absoluto medio en Entrenamiento: ",mape(performance_traindf), "\n")
+println("Error cuadrático medio en Entrenamiento: ",rmse(performance_traindf), "\n")
+println("Error medio cuadrado en Entrenamiento: ",mean(performance_traindf.error_sq), "\n")
+
+# Distribución de los errores
+
+# Histograma del error en los datos de prueba
+histogram(performance_testdf.error, bins = 50, title = "Análisis del eror en los datos de prueba", ylabel = "Frecuencia", xlabel = "Error",legend = false, size=(450,300))
+
+# Histograma del error en los datos de entrenamiento
+histogram(performance_traindf.error, bins = 50, title = "Training Error Analysis", ylabel = "Frequency", xlabel = "Error",legend = false, size=(450,300))
+
+# Scatter plot de los valores actuales vs los datos de prueba
+test_plot = scatter(performance_testdf[!,:y_actual],performance_testdf[!,:y_predicted], title = "Valor de Predicción vs Valor Actual en Datos de Prueba", ylabel = "Valor de Predicción", xlabel = "Valor Actual", legend = false, size=(700,300))
+
+
+# Scatter plot de los valores actuales vs los datos de entrenamiento
+train_plot = scatter(performance_traindf[!,:y_actual],performance_traindf[!,:y_predicted], title = "Valor de Predicción vs Valor Actual en Datos de Entrenamiento", ylabel = "Valor de Predicción", xlabel = "Valor Actual", legend = false, size=(700,300))
+
+
+# validación cruzada
+cross_validation(train,10, fm)
+
+
